@@ -1,0 +1,136 @@
+# Kibana values (subchart)
+kibana:
+  service:
+    ## @param service.ports.http Kubernetes Service port
+    ##
+    ports:
+      http: 5601
+    ## @param service.type Kubernetes Service type
+    ##
+    type: LoadBalancer
+
+# Elasticsearch values
+global:
+  kibanaEnabled: true
+
+master:
+  masterOnly: true
+  replicaCount: 2
+  ## Elasticsearch resource requests and limits
+  ## ref: http://kubernetes.io/docs/user-guide/compute-resources/
+  ## We usually recommend not to specify default resources and to leave this as a conscious
+  ## choice for the user. This also increases chances charts run on environments with little
+  ## resources, such as Minikube. If you do want to specify resources, uncomment the following
+  ## lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  ## @param master.resources.limits The resources limits for elasticsearch containers
+  ## @param master.resources.requests The requested resources for elasticsearch containers
+  ##
+  resources:
+    ## Examples:
+    ## limits:
+    ##    cpu: 500m
+    ##    memory: 1Gi
+    ## requests:
+    ##    cpu: 250m
+    ##    memory: 256Mi
+    limits: {}
+    requests: {}
+  ## @param master.heapSize Elasticsearch master-eligible node heap size.
+  ## Note: The recommended heapSize is half of the container's memory.
+  ## If omitted, it will be automatically set.
+  ## Example:
+  ##   heapSize: 128m
+  ##
+  heapSize: 128m
+
+data:
+  replicaCount: 2
+  ## @param data.resources.limits The resources limits for the data containers
+  ## @param data.resources.requests [object] The requested resources for the data containers
+  resources:
+    limits: {}
+    requests:
+      cpu: 500m
+      memory: 2048Mi
+  ## @param data.heapSize Elasticsearch data node heap size.
+  heapSize: 1024m
+
+coordinating:
+  replicaCount: 2
+  ## @param coordinating.resources.limits The resources limits for the coordinating-only containers
+  ## @param coordinating.resources.requests [object] The requested resources for the coordinating-only containers
+  resources:
+    limits: {}
+    requests:
+      cpu: 500m
+      memory: 2048Mi
+  ## @param coordinating.heapSize Elasticsearch coordinating node heap size.
+  heapSize: 1024m
+
+ingest:
+  replicaCount: 2
+  ## @param ingest.resources.limits The resources limits for the ingest-only containers
+  ## @param ingest.resources.requests [object] The requested resources for the ingest-only containers
+  resources:
+    limits: {}
+    requests:
+      cpu: 500m
+      memory: 2048Mi
+  ## @param ingest.heapSize Elasticsearch ingest-only node heap size.
+  heapSize: 1024m
+
+sysctlImage:
+  ## Enable kernel settings modifier image - not available in GKE Autopilot
+  ## See https://www.elastic.co/guide/en/cloud-on-k8s/master/k8s-virtual-memory.html
+  enabled: false
+
+## extraDeploy accepts an array of extra objects to deploy with the release
+## Daemonset that changes the host kernel setting on all nodes
+extraDeploy:
+  - apiVersion: apps/v1
+    kind: DaemonSet
+    metadata:
+      name: max-map-count-setter
+      labels:
+        k8s-app: max-map-count-setter
+    spec:
+      selector:
+        matchLabels:
+          name: max-map-count-setter
+      template:
+        metadata:
+          labels:
+            name: max-map-count-setter
+        spec:
+          initContainers:
+            - name: max-map-count-setter
+              image: docker.io/bash:5.2.21
+              resources:
+                limits:
+                  cpu: 100m
+                  memory: 32Mi
+              securityContext:
+                privileged: true
+                runAsUser: 0
+              command:
+                [
+                  "/usr/local/bin/bash",
+                  "-e",
+                  "-c",
+                  "echo 262144 > /proc/sys/vm/max_map_count",
+                ]
+          containers:
+            - name: sleep
+              image: docker.io/bash:5.2.21
+              command: ["sleep", "infinity"]
+# This init container ensures that the max_map_count setting has been applied before starting Elasticsearch.
+# This is not required, but is encouraged when using the previous Daemonset to set max_map_count.
+# Do not use this if setting config.node.store.allow_mmap: false
+initContainers:
+  - name: max-map-count-check
+    command:
+      [
+        "sh",
+        "-c",
+        "while true; do mmc=$(cat /proc/sys/vm/max_map_count); if [ ${mmc} -eq 262144 ]; then exit 0; fi; sleep 1; done",
+      ]

@@ -1,0 +1,31 @@
+WARNING
+
+    Elasticsearch requires some changes in the kernel of the host machine to
+    work as expected. If those values are not set in the underlying operating
+    system, the ES containers fail to boot with ERROR messages.
+
+    To check whether the host machine meets the requirements, run the command
+    below:
+
+      kubectl logs --namespace es $(kubectl get --namespace es \
+        pods -l app=elasticsearch,role=master -o jsonpath='{.items[0].metadata.name}') \
+	elasticsearch
+
+    You can adapt the Kernel parameters on you cluster as described in the
+    official documentation:
+
+      https://kubernetes.io/docs/tasks/administer-cluster/sysctl-cluster
+
+    As an alternative, you can specify "sysctlImage.enabled=true" to use a
+    privileged initContainer to change those settings in the Kernel:
+
+      helm upgrade --namespace es es oci://registry-1.docker.io/bitnamicharts/elasticsearch --set sysctlImage.enabled=true
+
+    Note that this requires the ability to run privileged containers, which is likely not
+    the case on many secure clusters. To cover this use case, you can also set some parameters
+    in the config file to customize the default settings:
+
+      https://www.elastic.co/guide/en/elasticsearch/reference/current/index-modules-store.html
+      https://www.elastic.co/guide/en/cloud-on-k8s/master/k8s-virtual-memory.html
+
+    For that, you can place the desired parameters by using the "config" block present in the values.yaml

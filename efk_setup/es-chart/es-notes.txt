@@ -1,0 +1,50 @@
+NAME: elastic
+LAST DEPLOYED: Mon Dec 18 14:24:42 2023
+NAMESPACE: elastic
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+CHART NAME: elasticsearch
+CHART VERSION: 19.13.14
+APP VERSION: 8.11.3
+
+-------------------------------------------------------------------------------
+ WARNING
+
+    Elasticsearch is only running one master node replica, assuming all the
+    roles and with "single-node" discovery configured. If you want to scale up
+    to more replicas, make sure you refresh the configuration of the existing
+    statefulset. For example, scale down to 0 replicas first to avoid
+    inconsistencies in the configuration:
+
+      kubectl scale --namespace elastic statefulset elastic-master --replicas=0
+      helm upgrade --namespace elastic elastic oci://registry-1.docker.io/bitnamicharts/elasticsearch --reset-values --set master.masterOnly=false
+
+    Please note that the master nodes should continue assuming all the roles
+    (master.masterOnly: false) since there is shard data on the first replica.
+-------------------------------------------------------------------------------
+
+-------------------------------------------------------------------------------
+ WARNING
+
+    Elasticsearch requires some changes in the kernel of the host machine to
+    work as expected. If those values are not set in the underlying operating
+    system, the ES containers fail to boot with ERROR messages.
+
+    More information about these requirements can be found in the links below:
+
+      https://www.elastic.co/guide/en/elasticsearch/reference/current/file-descriptors.html
+      https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html
+
+    This chart uses a privileged initContainer to change those settings in the Kernel
+    by running: sysctl -w vm.max_map_count=262144 && sysctl -w fs.file-max=65536
+
+** Please be patient while the chart is being deployed **
+
+  Elasticsearch can be accessed within the cluster on port 9200 at elastic-elasticsearch.elastic.svc.cluster.local
+
+  To access from outside the cluster execute the following commands:
+
+    kubectl port-forward --namespace elastic svc/elastic-elasticsearch 9200:9200 &
+    curl http://127.0.0.1:9200/

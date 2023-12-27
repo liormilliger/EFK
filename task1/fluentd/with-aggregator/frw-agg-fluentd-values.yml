@@ -1,0 +1,35 @@
+aggregator:
+  ## @param aggregator.enabled Enable Fluentd aggregator statefulset
+  ##
+  enabled: true
+  ## @param aggregator.configFile Name of the config file that will be used by Fluentd at launch under the `/opt/bitnami/fluentd/conf` directory
+  ##
+  configFile: fluentd.conf
+  ## @param aggregator.configMap Name of the config map that contains the Fluentd configuration files
+  ##
+  configMap: fluentd-agg-config
+  ## @param aggregator.extraEnvVars Extra environment variables to pass to the container
+  ##
+  extraEnvVars:
+    - name: ELASTICSEARCH_HOST
+      value: "elastic-elasticsearch.elastic.svc.cluster.local"
+    - name: ELASTICSEARCH_PORT
+      value: "9200"
+
+forwarder:
+  ## @param forwarder.enabled Enable forwarder daemonset
+  ##
+  enabled: true
+  ## @param forwarder.configFile Name of the config file that will be used by Fluentd at launch under the `/opt/bitnami/fluentd/conf` directory
+  ##
+  configFile: fluentd.conf
+  ## @param forwarder.configMap Name of the config map that contains the Fluentd configuration files
+  ## If not specified, one will be created by default
+  ##
+  configMap: fluentd-frw-config
+  ## @param forwarder.extraEnvVars Extra environment variables to pass to the container
+  extraEnvVars:
+    - name: FLUENTD_AGGREGATOR_HOST
+      value: "fluentd-0.fluentd-headless.fluentd.svc.cluster.local"
+    - name: FLUENTD_AGGREGATOR_PORT
+      value: "24224"

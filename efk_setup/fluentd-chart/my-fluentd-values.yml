@@ -1,0 +1,23 @@
+forwarder:
+  ## @param forwarder.enabled Enable forwarder daemonset
+  ##
+  enabled: true
+  ## @param forwarder.configMap Name of the config map that contains the Fluentd configuration files
+  ## If not specified, one will be created by default
+  ##
+  configMap: "apache-log-parser"
+
+aggregator:
+  ## @param aggregator.enabled Enable Fluentd aggregator statefulset
+  ##
+  enabled: true
+  ## @param aggregator.configMap Name of the config map that contains the Fluentd configuration files
+  ##
+  configMap: "elasticsearch-output"
+  ## @param aggregator.extraEnvVars Extra environment variables to pass to the container
+  ##
+  extraEnvVars:
+    - name: ELASTICSEARCH_HOST
+      value: "elastic-elasticsearch.elastic.svc.cluster.local"
+    - name: ELASTICSEARCH_PORT
+      value: "9200"
